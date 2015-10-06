@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Comparing Performance of Baseball Players</title>
+<meta charset="utf-8">
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+<style>
+    h2 {
+        text-align: center;
+    }
+    #playerSelectionBox {
+        width: 800px;
+        margin: auto;
+        text-align: center;
+    }
+    #guideline {
+        margin-bottom: 10px;
+    }
+    #selectPlayer {
+        margin-right: 10px;
+    }
+    #addToChart {
+        margin-right: 30px;
+    }    
+    #svgForAVG {
+        display: block;
+        margin: auto;
+    }
+</style>
+
+
+</head>
+<body>
+<script type="text/javascript">
+    d3.select("body")
+    .append("h2")
+    .text("Comparing Performance of Baseball Players");
+    
+    d3.csv("baseball_data.csv",function(d){
+        d["avg"] = +d["avg"];
+        d["HR"] = +d["HR"];
+        return d;
+    },function(data){        
+        data.sort(function(a,b){
+            return a["name"] > b["name"]? 1 : (a["name"] < b["name"]?-1:0);
+        });        
+        function dataKeyFunction(d){
+            return d["name"];
+        }
+        d3.select("body")
+        .append("div")
+        .attr("id", "playerSelectionBox");
+        
+        d3.select("#playerSelectionBox")
+        .append("div")
+        .attr("id","guideline")
+        .text("Select and add one player at a time from the selection box to compare their performance in terms of their batting average");        
+        var dataOfSelectedPlayers = [];
+        d3.select("#playerSelectionBox")
+        .append("select")
+        .attr("id","selectPlayer")
+        .selectAll("option")
+        .data(data.filter(function(d){
+            var isPlayerSelected = false;
+            dataOfSelectedPlayers.forEach(function(selectedPlayer){
+                if (selectedPlayer["name"] == d["name"]){
+                    isPlayerSelected = true;
+                }            
+            });
+            return !isPlayerSelected;           
+        }),dataKeyFunction)
+        .enter()
+        .append("option")
+        .attr("value",function(d){
+            return d["name"];
+        })
+        .text(function(d){
+            return d["name"];
+        });       
+        
+        var svgForAVG = d3.select("body")
+        .append("svg")
+        .attr("id", "svgForAVG")
+        .attr("width", 800)
+        .attr("height", 500)
+        .style("margin","auto")
+        .append('g')
+        .attr('class','chart');           
+    
+        /*
+        Dimple.js Chart construction code
+        */
+
+        
+    
+        var HRChart = new dimple.chart(svgForAVG, dataOfSelectedPlayers);
+        var x = HRChart.addCategoryAxis("x", "name"); 
+        HRChart.addMeasureAxis("y", "avg");
+        HRChart.addSeries(null, dimple.plot.bar);
+        HRChart.draw();                               
+         
+        d3.select("#playerSelectionBox")
+        .append("button")
+        .attr("id","addToChart")
+        .text("Add to Chart")
+        .on("click", function(){
+        var nameOfSelectedPlayer = $("#selectPlayer").val();
+        var datumOfSelectedPlayer = data.filter(function(d){
+            return d["name"] == nameOfSelectedPlayer;
+        })[0];
+        dataOfSelectedPlayers.push(datumOfSelectedPlayer);
+        HRChart.data = dataOfSelectedPlayers;
+        HRChart.draw(1000);
+        
+        var updatedPlayerOptionsSelection = d3.select("#selectPlayer")
+        .selectAll("option")
+        .data(data.filter(function(d){
+            var isPlayerSelected = false;
+            dataOfSelectedPlayers.forEach(function(selectedPlayer){
+                if (selectedPlayer["name"] == d["name"]){
+                    isPlayerSelected = true;
+                }            
+            });
+            return !isPlayerSelected;           
+        }), dataKeyFunction);
+        
+        updatedPlayerOptionsSelection.enter()
+        .append("option")
+        .attr("value",function(d){
+        return d["name"];
+        })
+        .text(function(d){
+        return d["name"];
+        });
+        
+        updatedPlayerOptionsSelection.exit()
+        .remove();
+        });        
+                     
+    });
+    
+    
+    
+</script>
+</body>
+</html>
